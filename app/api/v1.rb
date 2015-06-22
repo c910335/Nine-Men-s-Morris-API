@@ -27,7 +27,7 @@ module Morris
          end
 
          desc 'Return status of a specific game.' do
-            success Morris::Entities::StatusGame
+            success Morris::Entities::PrivateGame
             failure [[404, 'Not Found'], [403, 'Invalid Player Token']]
          end
          params do
@@ -37,8 +37,8 @@ module Morris
          get do
             error! 'Not Found', 404 if games[params[:token]].nil?
             game = games[params[:token]]
-            error! 'Invalid Player Token', 403 unless game.host[:token] == params[:player_token] || !game.attendee.nil? && game.attendee[:token] == params[:player_token]
-            game.to_hash
+            error! 'Invalid Player Token', 403 unless game.has_player? params[:player_token]
+            game.to_private_hash
          end
 
          desc 'Return a list of all games.' do
@@ -66,6 +66,41 @@ module Morris
             error! 'Full', 403 unless game.attend_ability
             game.attend params[:name]
             {:title => game.title, :token => game.token, :player_token => game.attendee[:token]}
+         end
+
+         desc 'Return whether it is your turn.' do
+            success Morris::Entities::MyTurn
+            failure [[404, 'Not Found'], [403, 'Invalid Player Token']]
+         end
+         params do
+            requires :token, type: String, desc: 'Token of the game.'
+            requires :player_token, type: String, desc: 'Your player token.'
+         end
+         get :my_turn do
+            error! 'Not Found', 404 if games[params[:token]].nil?
+            game = games[params[:token]]
+            error! 'Invalid Player Token', 403 unless game.has_player? params[:player_token]
+            {:my_turn => game.my_turn?( params[:player_token] )}
+         end
+
+         desc 'Click on x, y.' do
+            success Morris::Entities::Result
+            failure [[404, 'Not Found'], [403, 'Invalid Player Token'], [410, 'This game is already over'], [400, 'Against the Rules']]
+         end
+         params do
+            requires :token, type: String, desc: 'Token of the game.'
+            requires :player_token, type: String, desc: 'Your player token.'
+            requires :x, type: Integer, desc: 'The x coordinate to click.'
+            requires :y, type: Integer, desc: 'The y coordinate to click.'
+         end
+         post :click do
+            error! 'Not Found', 404 if games[params[:token]].nil?
+            game = games[params[:token]]
+            error! 'Invalid Player Token', 403 unless game.has_player? params[:player_token]
+            result = game.click params[:x], params[:y], params[:player_token]
+            error! result[:error_message], result[:http_code] if result[:code] == game.class::ERROR
+            result.delete :code
+            result
          end
 
       end

@@ -40,14 +40,21 @@ module Morris
             @status = PLACING
             @board = Array.new(3) { Array.new 9, NONE }
             @board.each { |layer| layer[4] = INVALID }
-            @mover = HOST
-            @waiter = ATTENDEE
+            @mover = ATTENDEE
+            @waiter = HOST
             @to_place = { HOST => 9, ATTENDEE => 9}
             @on_board = { HOST => 0, ATTENDEE => 0}
             @man_to_move = nil
          end
 
+         def has_player? token
+            return true if @host[:token] == token
+            return true if !@attendee.nil? && @attendee[:token] == token
+            false
+         end
+
          def my_turn? token
+            return false if @status.nil?
             return true if @host[:token] == token && @mover == HOST
             return true if @attendee[:token] == token && @mover == ATTENDEE
             false
@@ -55,6 +62,7 @@ module Morris
 
          def click x, y, token
             return {:code => ERROR, :error_message => 'It\'s not your turn now.', :http_code => 403} unless my_turn? token
+            return {:code => ERROR, :error_massage => 'Out of board.', :http_code => 400} unless (0...3).include?(x) && (0...9).include?(y)
             case @status
             when PLACING
                result = place x, y
@@ -89,13 +97,13 @@ module Morris
                end
                @status = result[:next_status]
             else
-               result[:http_code] = 403
+               result[:http_code] = 400
             end
             result
          end
 
          def place x, y
-            return {:code => ERROR, :error_message => 'This man can\'t place here!'} if @board[x][y] != NONE
+            return {:code => ERROR, :error_message => 'This man can\'t place here.'} if @board[x][y] != NONE
             result = {
                :code => OK,
                :changes => [{:x => x, :y => y, :z => @mover}],
@@ -125,7 +133,7 @@ module Morris
 
          def move x, y
             return select x, y if @board[x][y] == @mover
-            return {:code => ERROR, :error_message => 'This man can\'t move here!'} unless @board[x][y] == NONE && beside(@man_to_move, {:x => x, :y => y})
+            return {:code => ERROR, :error_message => 'This man can\'t move here.'} unless @board[x][y] == NONE && beside(@man_to_move, {:x => x, :y => y})
             @man_to_move[:z] = NONE
             result = {
                :code => OK,
@@ -135,7 +143,7 @@ module Morris
             @man_to_move = nil
             @board[x][y] = @mover
             @board[@man_to_move[:x]][@man_to_move[:y]] = NONE
-            if line(x, y, @mover) && !check_all_line(@waiter)
+            if line(x, y, @mover) && check_all_line(@waiter)
                result.merge!({
                   :next_status => MOVE_EATING,
                   :take_turn => false
@@ -150,14 +158,14 @@ module Morris
          end
 
          def select x, y
-            return {:code => ERROR, :error_message => 'This is not your man!'} unless @board[x][y] == @mover
+            return {:code => ERROR, :error_message => 'This is not your man.'} unless @board[x][y] == @mover
             @man_to_move = {:x => x, :y => y, :z => @mover}
             {:code => OK, :take_turn => false, :next_status => MOVING}
          end
 
          def eat x, y
-            return {:code => ERROR, :error_message => 'This is not your opponent\'s man!'} unless @board[x][y] == @waiter
-            return {:code => ERROR, :error_message => 'You can\'t remove a man from a mill!'} if line x, y, @waiter
+            return {:code => ERROR, :error_message => 'This is not your opponent\'s man.'} unless @board[x][y] == @waiter
+            return {:code => ERROR, :error_message => 'You can\'t remove a man from a mill.'} if line x, y, @waiter
             @board[x][y] = NONE
             @on_board[@mover] -= 1
             {:code => OK,
