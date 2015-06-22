@@ -4,10 +4,10 @@ This is a "Nine Men's Morris API" written by Ruby on Grape.
 But it's not finished yet!
 ## Done
 - Game Management APIs
-- MorrisCore (But It must be buggy now)
+- MorrisCore (But it must be buggy now)
+- PvP APIs   (And it must be buggy, too)
 
 ## Todo
-- PvP APIs
 - MorrisAI
 
 ## License
