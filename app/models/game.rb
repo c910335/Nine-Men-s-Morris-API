@@ -1,17 +1,8 @@
 module Morris
    module Core
       class Game
-         OVER = 0
-         PLACING = 1
-         MOVE_SELECTING = 2
-         MOVING = 3
-         PLACE_EATING = 5
-         MOVE_EATING = 6
-
-         INVALID = -1
-         NONE = 0
-         HOST = 1
-         ATTENDEE = 2
+         include Morris::Code::Status
+         include Morris::Code::Man
 
          ERROR = 0
          OK = 1
@@ -30,6 +21,7 @@ module Morris
             @to_place = { HOST => 9, ATTENDEE => 9}
             @on_board = { HOST => 0, ATTENDEE => 0}
             @man_to_move = nil
+            @winner = nil
             self
          end
 
@@ -63,6 +55,7 @@ module Morris
                      result[:next_status] = OVER
                      result[:winner] = @mover
                      result[:take_turn] = false
+                     @winner = @mover
                   else
                      take_turn
                   end
@@ -239,7 +232,7 @@ module Morris
          end
 
          def to_hash
-            {
+            hash = {
                :status => @status,
                :board => @board,
                :mover => @mover,
@@ -247,6 +240,7 @@ module Morris
                :on_board => @on_board,
                :man_to_move => @man_to_move
             }
+            hash[:winner] = @winner unless @winner.nil?
          end
       end
    end

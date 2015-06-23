@@ -1,7 +1,7 @@
 module Morris
    class V1 < Grape::API
       format :json
-      version 'v1', using: :path
+
       helpers Morris::Helpers
       helpers do
          @@games = nil
@@ -10,10 +10,13 @@ module Morris
             @@games = Hash.new
          end
       end
+
       resource :game do
+         format :json
 
          desc 'Start a new game.' do
             success Morris::Entities::NewGame
+            failure [[400, 'Not Support VS COM']]
          end
          params do
             requires :title, type: String, desc: 'Title of the game.'
@@ -21,6 +24,7 @@ module Morris
             requires :name, type: String, desc: 'Your name.'
          end
          post do
+            error! 'Not Support VS COM', 400 if params[:com]
             game = new_game params[:title], params[:com], params[:name]
             games[game.token] = game
             {:title => game.title, :token => game.token, :player_token => game.host[:token]}
@@ -47,7 +51,7 @@ module Morris
          get :list do
             list = Array.new
             games.each_value do |game|
-               list.push game.to_hash
+               list.push game.to_hash if game.status.nil?
             end
             {:list => list}
          end
@@ -103,6 +107,31 @@ module Morris
             result
          end
 
+         desc 'Return the last click result.' do
+            success Morris::Entities::Result
+            failure [[404, 'Not Found'], [403, 'Invalid Player Token'], [400, 'The game has just begun.']]
+         end
+         params do
+            requires :token, type: String, desc: 'Token of the game.'
+            requires :player_token, type: String, desc: 'Your player token.'
+         end
+         get :last_click do
+            error! 'Not Found', 404 if games[params[:token]].nil?
+            game = games[params[:token]]
+            rror! 'Invalid Player Token', 403 unless game.has_player? params[:player_token]
+            result = game.last_click
+            error! result[:error_message], result[:http_code] if result[:code] == game.class::ERROR
+            result.delete :code
+            result
+         end
+
       end
+
+      add_swagger_documentation api_version: 'v1',
+                                hide_documentation_path: true,
+                                hide_format: true,
+                                mount_path: '/doc',
+                                base_path: '/morris/v1/'
+
    end
 end

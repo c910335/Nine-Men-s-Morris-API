@@ -38,6 +38,7 @@ module Morris
          expose :to_place, using: LeftMen, documentation: {desc: 'Men which is not placed yet', required: true}
          expose :on_board, using: LeftMen, documentation: {desc: 'Men on board', required: true}
          expose :man_to_move, using: Man, documentation: {desc: 'Man selected', required: true}
+         expose :winner, documentation: {desc: 'Winner\'s player code'}
       end
 
       class GameList < Grape::Entity
