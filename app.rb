@@ -1,5 +1,6 @@
+require './app/models/entities.rb'
+require './app/models/game.rb'
 require './app/helpers/game.rb'
-require './app/api/entities.rb'
 require './app/api/v1.rb'
 
 module Morris
