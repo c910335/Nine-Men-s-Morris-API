@@ -241,6 +241,7 @@ module Morris
                :man_to_move => @man_to_move
             }
             hash[:winner] = @winner unless @winner.nil?
+            hash
          end
       end
    end

@@ -14,8 +14,8 @@ module Morris
       end
 
       class LeftMen < Grape::Entity
-         expose '1', documentation: {type: 'string', desc: 'Left men of host', required: true}
-         expose '2', documentation: {type: 'string', desc: 'Left men of attendee', required: true} 
+         expose '1', documentation: {type: 'integer', desc: 'Left men of host', required: true}
+         expose '2', documentation: {type: 'integer', desc: 'Left men of attendee', required: true}
       end
 
       class Man < Grape::Entity
@@ -43,6 +43,10 @@ module Morris
 
       class GameList < Grape::Entity
          expose :list, using: Game, documentation: {is_array: true, desc: 'List of all games', required: true}
+      end
+
+      class Begin < Grape::Entity
+         expose :begin, documentation: {type: 'boolean', desc: 'True if the game has begun', required: true}
       end
 
       class MyTurn < Grape::Entity

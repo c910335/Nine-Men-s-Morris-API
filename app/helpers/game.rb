@@ -13,13 +13,22 @@ module Morris
             @attendee = nil
             @token = SecureRandom.hex
             @attend_ability = !com
+            @last_click = {:code => ERROR, :error_message => 'The game has not yet begun.', :http_code => 403}
          end
 
          def attend name
             @attend_ability = false
             @attendee = {:name => name, :token => SecureRandom.hex}
-            @last_click = {:code => ERROR, :error_message => 'The game has just begun.', :http_code => 400}
+            @last_click = {:code => ERROR, :error_message => 'The game has just begun.', :take_turn => true, :http_code => 403}
             init_game
+         end
+
+         def begin?
+            !@status.nil?
+         end
+
+         def over?
+            return !@status.nil? && @status == OVER
          end
 
          def has_player? token
@@ -38,7 +47,16 @@ module Morris
          def click x, y, token
             return {:code => ERROR, :error_message => 'It\'s not your turn now.', :http_code => 403} unless my_turn? token
             result = super x, y
-            @last_click = result if (result[:code] == OK)
+            if result[:code] == OK
+               if @last_click[:take_turn]
+                  @last_click = result
+               else
+                  changes = @last_click[:changes]
+                  @last_click = result
+                  @last_click[:changes] = changes + @last_click[:changes]
+                  @last_click[:change_num] = @last_click[:changes].length
+               end
+            end
             result
          end
 

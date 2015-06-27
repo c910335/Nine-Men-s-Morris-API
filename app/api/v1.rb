@@ -30,7 +30,7 @@ module Morris
             {:title => game.title, :token => game.token, :player_token => game.host[:token]}
          end
 
-         desc 'Return status of a specific game.' do
+         desc 'Return details of a specific game.' do
             success Morris::Entities::PrivateGame
             failure [[404, 'Not Found'], [403, 'Invalid Player Token']]
          end
@@ -51,7 +51,7 @@ module Morris
          get :list do
             list = Array.new
             games.each_value do |game|
-               list.push game.to_hash if game.status.nil?
+               list.push game.to_hash unless game.over?
             end
             {:list => list}
          end
@@ -70,6 +70,21 @@ module Morris
             error! 'Full', 403 unless game.attend_ability
             game.attend params[:name]
             {:title => game.title, :token => game.token, :player_token => game.attendee[:token]}
+         end
+
+         desc 'Return whether the game has begun.' do
+            success Morris::Entities::Begin
+            failure [[404, 'Not Found'], [403, 'Invalid Player Token']]
+         end
+         params do
+            requires :token, type: String, desc: 'Token of the game.'
+            requires :player_token, type: String, desc: 'Your player token.'
+         end
+         get :begin do
+            error! 'Not Found', 404 if games[params[:token]].nil?
+            game = games[params[:token]]
+            error! 'Invalid Player Token', 403 unless game.has_player? params[:player_token]
+            {:begin => game.begin? }
          end
 
          desc 'Return whether it is your turn.' do
@@ -109,7 +124,7 @@ module Morris
 
          desc 'Return the last click result.' do
             success Morris::Entities::Result
-            failure [[404, 'Not Found'], [403, 'Invalid Player Token'], [400, 'The game has just begun.']]
+            failure [[404, 'Not Found'], [403, 'Invalid Player Token'], [403, 'The game has just begun.'], [403, 'The game has not yet begun.']]
          end
          params do
             requires :token, type: String, desc: 'Token of the game.'
