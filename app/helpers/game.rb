@@ -38,6 +38,7 @@ module Morris
          end
 
          def my_turn? token
+            return {:code => ERROR, :error_message => 'This game is already over', :http_code => 410} if over?
             return false if @status.nil?
             return true if @host[:token] == token && @mover == HOST
             return true if @attendee[:token] == token && @mover == ATTENDEE
@@ -48,7 +49,7 @@ module Morris
             return {:code => ERROR, :error_message => 'It\'s not your turn now.', :http_code => 403} unless my_turn? token
             result = super x, y
             if result[:code] == OK
-               if @last_click[:take_turn]
+               if @last_click[:take_turn] || @last_click[:changes].nil?
                   @last_click = result
                else
                   changes = @last_click[:changes]

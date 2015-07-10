@@ -89,7 +89,7 @@ module Morris
 
          desc 'Return whether it is your turn.' do
             success Morris::Entities::MyTurn
-            failure [[404, 'Not Found'], [403, 'Invalid Player Token']]
+            failure [[404, 'Not Found'], [403, 'Invalid Player Token'], [410, 'This game is already over']]
          end
          params do
             requires :token, type: String, desc: 'Token of the game.'

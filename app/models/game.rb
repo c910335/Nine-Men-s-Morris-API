@@ -33,7 +33,7 @@ module Morris
             when PLACE_EATING
                result = eat x, y
                if result[:take_turn]
-                  unless @to_place[HOST] || @to_place[ATTENDEE]
+                  unless @to_place[HOST] > 0 || @to_place[ATTENDEE] > 0
                      result[:next_status] = MOVE_SELECTING
                   else
                      result[:next_status] = PLACING
@@ -105,10 +105,10 @@ module Morris
                :changes => [{:x => x, :y => y, :z => @mover}, @man_to_move],
                :change_num => 2
             }
-            @man_to_move = nil
             @board[x][y] = @mover
             @board[@man_to_move[:x]][@man_to_move[:y]] = NONE
-            if mill?(x, y, @mover) && all_mill?(@waiter)
+            @man_to_move = nil
+            if mill?(x, y, @mover) && !all_mill?(@waiter)
                result.merge!({
                   :next_status => MOVE_EATING,
                   :take_turn => false
@@ -124,6 +124,7 @@ module Morris
 
          def select x, y
             return {:code => ERROR, :error_message => 'This is not your man.'} unless @board[x][y] == @mover
+            return {:code => ERROR, :error_message => 'This man can\'t move.'} unless can_move? x, y
             @man_to_move = {:x => x, :y => y, :z => @mover}
             {:code => OK, :take_turn => false, :next_status => MOVING}
          end
@@ -132,7 +133,7 @@ module Morris
             return {:code => ERROR, :error_message => 'This is not your opponent\'s man.'} unless @board[x][y] == @waiter
             return {:code => ERROR, :error_message => 'You can\'t remove a man from a mill.'} if mill? x, y, @waiter
             @board[x][y] = NONE
-            @on_board[@mover] -= 1
+            @on_board[@waiter] -= 1
             {:code => OK,
              :changes => [{:x => x, :y => y, :z => NONE}],
              :change_num => 1,
@@ -140,14 +141,14 @@ module Morris
          end
 
          def win
-            return false if @to_place[HOST] || @to_place[ATTENDEE]
+            return false if @to_place[HOST] > 0 || @to_place[ATTENDEE] > 0
             return true if @on_board[@waiter] < 3 || !all_can_move?(@waiter)
             false
          end
 
          def beside man1, man2 
             return false if man1.nil? || man2.nil?
-            return true if man1[:x] == man2[:x] && LAYER_BESIDE_LIST[man1[:y]].include(man2[:y])
+            return true if man1[:x] == man2[:x] && LAYER_BESIDE_LIST[man1[:y]].include?(man2[:y])
             return true if [1, 3, 5, 7].include?(man1[:y]) && man1[:y] == man2[:y] && (man1[:x] - man2[:x]).abs == 1
             false
          end
